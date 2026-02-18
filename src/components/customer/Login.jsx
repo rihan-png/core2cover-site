@@ -8,6 +8,7 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { customerLogin } from "../../api/auth"; 
 import "./Login.css";
 import LoadingSpinner from "../ui/LoadingSpinner";
+import { setStorageItem, setEncryptedStorageItem, getStorageItem, removeStorageItem } from "../../utils/storage";
 
 /**
  * Login Component
@@ -20,6 +21,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const router = useRouter(); 
   const { data: session, status } = useSession();
 
@@ -27,15 +29,6 @@ export default function Login() {
       EASY ENCRYPTION HELPERS
   ========================================= */
   
-  /**
-   * Scrambles data before saving to Local Storage to prevent plain-text visibility.
-   */
-  const secureSetItem = (key, value) => {
-    if (!value) return;
-    const encodedValue = btoa(String(value)); // Encodes to Base64
-    localStorage.setItem(key, encodedValue);
-  };
-
   /**
    * Decodes the backend payload.
    */
@@ -54,13 +47,24 @@ export default function Login() {
   useEffect(() => {
     if (status === "authenticated" && session?.user) {
       // Obfuscate Google session data before it enters Local Storage
-      secureSetItem("userEmail", session.user.email);
-      secureSetItem("userName", session.user.name);
-      secureSetItem("userId", session.user.id);
+      // For Google Login, we might default to localStorage (Remember Me = true) behavior
+      // or we could respect the checkbox if the user clicked it before Google Login?
+      // Typically Social Logins are persistent.
+      setEncryptedStorageItem("userEmail", session.user.email);
+      setEncryptedStorageItem("userName", session.user.name);
+      setEncryptedStorageItem("userId", session.user.id);
       
       router.push("/userprofile");
     }
   }, [status, session, router]);
+
+  // Check for existing manual login token
+  useEffect(() => {
+    const token = getStorageItem("token");
+    if (token) {
+      router.push("/userprofile");
+    }
+  }, [router]);
 
   const isEmailValid = (val) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(val.trim());
 
@@ -88,7 +92,7 @@ export default function Login() {
 
       // Save the JWT token normally for the interceptor to use
       if (data?.token) {
-        localStorage.setItem("token", data.token); 
+        setStorageItem("token", data.token, rememberMe);
       }
 
       // Handle the encrypted payload from the backend
@@ -96,14 +100,14 @@ export default function Login() {
         const decodedUser = decodePayload(data.payload);
 
         // Clear old plain-text data if any exists
-        localStorage.removeItem("userId");
-        localStorage.removeItem("userEmail");
-        localStorage.removeItem("userName");
+        removeStorageItem("userId");
+        removeStorageItem("userEmail");
+        removeStorageItem("userName");
 
         // Save new data in scrambled format to hide it from "Inspect"
-        secureSetItem("userId", decodedUser.id); 
-        secureSetItem("userEmail", decodedUser.email); 
-        secureSetItem("userName", decodedUser.name); 
+        setEncryptedStorageItem("userId", decodedUser.id, rememberMe);
+        setEncryptedStorageItem("userEmail", decodedUser.email, rememberMe);
+        setEncryptedStorageItem("userName", decodedUser.name, rememberMe);
       }
 
       router.push("/");
@@ -164,6 +168,17 @@ export default function Login() {
                 {showPassword ? <FaEyeSlash /> : <FaEye />}
               </button>
             </div>
+          </div>
+
+          <div className="input-group" style={{ flexDirection: 'row', alignItems: 'center', gap: '10px', marginBottom: '15px' }}>
+            <input
+              type="checkbox"
+              checked={rememberMe}
+              onChange={(e) => setRememberMe(e.target.checked)}
+              id="rememberMe"
+              style={{ width: 'auto', margin: 0 }}
+            />
+            <label htmlFor="rememberMe" style={{ margin: 0, cursor: 'pointer', fontSize: '14px', color: '#555' }}>Remember Me</label>
           </div>
 
           <button type="submit" className="login-btn" disabled={loading}>

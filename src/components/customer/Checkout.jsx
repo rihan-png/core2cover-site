@@ -23,6 +23,7 @@ import MessageBox from "../ui/MessageBox";
 import LoadingSpinner from "../ui/LoadingSpinner";
 import sample from "../../assets/images/sample.jpg";
 import { FaArrowLeft, FaMapMarkerAlt, FaSearch, FaShoppingBag, FaTruckLoading, FaRulerCombined, FaTools, FaWallet } from "react-icons/fa";
+import { getEncryptedStorageItem } from "../../utils/storage";
 
 // Google Maps Imports
 import { GoogleMap, useJsApiLoader, Marker, Autocomplete } from "@react-google-maps/api";
@@ -67,11 +68,6 @@ export default function Checkout() {
   /* =========================================
       EASY ENCRYPTION HELPERS
   ========================================= */
-  const secureGetItem = useCallback((key) => {
-    if (typeof window === "undefined") return null;
-    const item = localStorage.getItem(key);
-    try { return item ? atob(item) : null; } catch (e) { return item; }
-  }, []);
 
   const triggerMsg = (text, type = "success") => setMsg({ text, type, show: true });
 
@@ -120,7 +116,7 @@ export default function Checkout() {
   }, []);
 
   useEffect(() => {
-    const effectiveEmail = session?.user?.email || secureGetItem("userEmail");
+    const effectiveEmail = session?.user?.email || getEncryptedStorageItem("userEmail");
     if (effectiveEmail) {
       setEmail(effectiveEmail);
       api.get(`/user/${encodeURIComponent(effectiveEmail)}`)
@@ -146,7 +142,7 @@ export default function Checkout() {
     })));
 
     getUserCredit().then((res) => setCredit(Number(res.data.credit || 0))).catch(() => setCredit(0));
-  }, [session, status, secureGetItem]);
+  }, [session, status]);
 
   /* CALCULATE TOTALS INCLUDING INSTALLATION */
   const computeSummary = useMemo(() => {

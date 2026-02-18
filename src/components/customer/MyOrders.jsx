@@ -11,6 +11,7 @@ import { FaTruckLoading, FaRulerCombined } from "react-icons/fa";
 import { requestReturn, getUserReturns, getUserCredit } from "../../api/return";
 import Image from "next/image";
 import LoadingSpinner from "../ui/LoadingSpinner";
+import { getEncryptedStorageItem } from "../../utils/storage";
 
 /* =========================
     STATUS HELPERS
@@ -106,20 +107,10 @@ export default function MyOrders() {
     }
   };
 
-  const secureGetItem = (key) => {
-    if (typeof window === "undefined") return null;
-    const item = localStorage.getItem(key);
-    try {
-      return item ? atob(item) : null;
-    } catch (e) {
-      return null;
-    }
-  };
-
   useEffect(() => {
     if (typeof window !== "undefined") {
       // Use secure helper to read scrambled email from storage
-      const storedEmail = secureGetItem("userEmail");
+      const storedEmail = getEncryptedStorageItem("userEmail");
       if (storedEmail) {
         setUserEmail(storedEmail.toLowerCase().trim());
       }

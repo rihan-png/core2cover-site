@@ -12,9 +12,9 @@ const api = axios.create({
 api.interceptors.request.use(
   (config) => {
     if (typeof window !== "undefined") {
-      const sellerId = localStorage.getItem("sellerId");
-      const designerId = localStorage.getItem("designerId");
-      const token = localStorage.getItem("token");
+      const sellerId = localStorage.getItem("sellerId") || sessionStorage.getItem("sellerId");
+      const designerId = localStorage.getItem("designerId") || sessionStorage.getItem("designerId");
+      const token = localStorage.getItem("token") || sessionStorage.getItem("token");
 
       // Attach secure identifiers to headers
       if (sellerId) config.headers["x-seller-id"] = sellerId;
@@ -44,6 +44,7 @@ api.interceptors.response.use(
       console.warn("Security Challenge: Unauthorized or Expired Session.");
       if (typeof window !== "undefined") {
         localStorage.removeItem("token");
+        sessionStorage.removeItem("token");
       }
     }
 

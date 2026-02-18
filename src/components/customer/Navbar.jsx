@@ -19,6 +19,7 @@ import {
 import { IoMdInformationCircle } from "react-icons/io";
 import "./Navbar.css";
 import CoreToCoverLogo from "../../assets/logo/CoreToCover_3.png";
+import { getEncryptedStorageItem, clearStorage } from "../../utils/storage";
 
 const BrandBold = ({ children }) => (
   <span className="brand brand-bold">{children}</span>
@@ -45,27 +46,17 @@ const Navbar = () => {
   const designerSuggestions = ["Interior Designer", "Kitchen Designer", "Product Designer", "Architect", "3D Visualizer"];
   const readymadeSuggestions = ["Furniture","Lights","Lighting","Decor Items","Sofa", "Dining Table", "Beds", "Wardrobes", "Office Chairs", "Coffee Tables", "Curtains", "Chandeliers", "Carpets", "Study Tables", "Bookshelves"];
 
-  const secureGetItem = useCallback((key) => {
-    if (typeof window === "undefined") return null;
-    const item = localStorage.getItem(key);
-    try {
-      return item ? atob(item) : null;
-    } catch (e) {
-      return item; 
-    }
-  }, []);
-
   useEffect(() => {
-    const email = secureGetItem("userEmail");
-    const name = secureGetItem("userName");
-    const id = secureGetItem("userId");
+    const email = getEncryptedStorageItem("userEmail");
+    const name = getEncryptedStorageItem("userName");
+    const id = getEncryptedStorageItem("userId");
 
     if (email) {
       setLocalUser({ email, name, id });
     } else {
       setLocalUser(null);
     }
-  }, [pathname, secureGetItem]);
+  }, [pathname]);
 
   const isUserAuthenticated = status === "authenticated" || !!localUser;
   const displayUser = session?.user || localUser;
@@ -166,7 +157,7 @@ const Navbar = () => {
   };
 
   const handleSignOut = async () => {
-    localStorage.clear();
+    clearStorage();
     setLocalUser(null);
     await signOut({ callbackUrl: "/login" });
   };

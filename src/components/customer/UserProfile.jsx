@@ -13,6 +13,7 @@ import { getClientHiredDesigners } from "../../api/designer";
 import MessageBox from "../ui/MessageBox";
 import { useJsApiLoader, Autocomplete } from "@react-google-maps/api";
 import LoadingSpinner from "../ui/LoadingSpinner";
+import { getEncryptedStorageItem, setEncryptedStorageItem, clearStorage, isPersistentSession } from "../../utils/storage";
 
 const libraries = ["places", "maps"];
 
@@ -39,30 +40,10 @@ const UserProfile = () => {
     libraries,
   });
 
-  /* =========================================
-      EASY ENCRYPTION HELPERS
-  ========================================= */
-  const secureSetItem = (key, value) => {
-    if (value === undefined || value === null) return;
-    // Scrambles the ID/Data before saving to Local Storage
-    localStorage.setItem(key, btoa(String(value)));
-  };
-
-  const secureGetItem = (key) => {
-    if (typeof window === "undefined") return null;
-    const item = localStorage.getItem(key);
-    try {
-      // Decodes the scrambled string for UI use
-      return item ? atob(item) : null;
-    } catch (e) {
-      return null;
-    }
-  };
-
   // Identity Pinning: Priority to secure session, then secure local storage
   const effectiveEmail = useMemo(() => {
     if (status === "authenticated") return session?.user?.email;
-    return secureGetItem("userEmail");
+    return getEncryptedStorageItem("userEmail");
   }, [session, status]);
 
   const triggerMsg = (text, type = "success") => {
@@ -91,11 +72,12 @@ const UserProfile = () => {
         /* =========================================
             ENCRYPTED LOCAL STORAGE SYNC
         ========================================= */
+        const rememberMe = isPersistentSession();
         // Scrambles all sensitive markers in the Application Tab
-        secureSetItem("userId", userData?.id);
-        secureSetItem("userEmail", userData?.email);
-        secureSetItem("userName", userData?.name);
-        if (userData?.image) secureSetItem("userImage", userData.image);
+        setEncryptedStorageItem("userId", userData?.id, rememberMe);
+        setEncryptedStorageItem("userEmail", userData?.email, rememberMe);
+        setEncryptedStorageItem("userName", userData?.name, rememberMe);
+        if (userData?.image) setEncryptedStorageItem("userImage", userData.image, rememberMe);
 
         setUser({
           id: userData?.id || "",
@@ -130,10 +112,8 @@ const UserProfile = () => {
   };
 
   const handleLogout = async () => {
-    if (typeof window !== "undefined") {
-      // Full context wipe to remove all encrypted markers
-      localStorage.clear();
-    }
+    // Full context wipe to remove all encrypted markers
+    clearStorage();
     await signOut({ callbackUrl: "/login" });
   };
 
