@@ -4,7 +4,7 @@ This guide will help you run the Core2Cover application locally.
 
 ## Prerequisites
 
-- Node.js (v20 or higher)
+- Node.js (v20 or higher recommended, based on @types/node dependency)
 - PostgreSQL database (optional for development)
 - npm or yarn package manager
 
